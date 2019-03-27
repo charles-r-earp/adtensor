@@ -1,6 +1,6 @@
 [package]
 name = "adtensor"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Charles Earp <charles.r.earp@gmail.com>"]
 edition = "2018"
 description = "Machine learning library with auto differentiation of arbitrary dimensional stack tensors."
