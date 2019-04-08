@@ -1,6 +1,6 @@
 use criterion::*;
-use adtensor::*;
-use std::ops::{Add, Deref};
+use adtensor::{Vector};
+use std::ops::{Add, AddAssign, Mul, Deref};
 use std::mem;
 use std::iter::{FromIterator, Iterator, IntoIterator, repeat};
 use typenum::*;
@@ -21,19 +21,63 @@ fn array1_zeros<T, N>() -> Array1<T>
         N: Unsigned {
   Array1::<T>::from_vec(vec_zeros::<T, N>())
 }
+
+struct Raw<T> {
+  t: T
+}
+
+impl<T> Default for Raw<T> 
+  where T: Default {
+  fn default() -> Self {
+    Self{t: T::default()}
+  }
+}
+
+impl<T> Clone for Raw<T>
+  where T: Clone {
+  fn clone(&self) -> Self {
+    Self{t: self.t.clone()}
+  }
+}
+
+impl<T> Copy for Raw<T> where T: Copy {}
+
+impl<T> Add<Raw<T>> for Raw<T>
+  where T: Add<T, Output=T> {
+  type Output = Raw<T>;
+  fn add(self, rhs: Self) -> Self {
+    Self{t: self.t + rhs.t}
+  }
+}
+
+impl<T> AddAssign<Raw<T>> for Raw<T>
+  where T: AddAssign<T> {
+  fn add_assign(&mut self, rhs: Self) {
+    self.t += rhs.t;
+  }
+}
+
+impl<T> Mul<Raw<T>> for Raw<T>
+  where T: Mul<T, Output=T> {
+  type Output = Raw<T>;
+  fn mul(self, rhs: Self) -> Self {
+    Self{t: self.t * rhs.t}
+  }
+}
+
  
 fn criterion_benchmark(c: &mut Criterion) {
   type T = f32;
   type N = U100;
   type M = na::U100;
-  c.bench_function("dot", |b| b.iter(|| {
-    let x = &[0.1; 100];
-    let y = &[0.1; 100];
-    dot::<T, N>(x, y)
+  c.bench_function("vector_raw_dot", |b| b.iter(|| {
+    let x = Vector::<Raw<T>, N>::default();
+    let y = Vector::<Raw<T>, N>::default();
+    x.dot(&y)
   }));
   c.bench_function("vector_dot", |b| b.iter(|| {
-    let x = Vector::<T, N>::from_iter(repeat(0.1));
-    let y = Vector::<T, N>::from_iter(repeat(0.1));
+    let x = Vector::<T, N>::default();
+    let y = Vector::<T, N>::default();
     x.dot(&y)
   }));
   /*c.bench_function("na_arr_dot", |b| b.iter(|| {
