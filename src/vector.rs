@@ -1,6 +1,5 @@
 use std::ops::{Add, AddAssign, Mul, Deref, DerefMut};
 use std::iter::{FromIterator, Iterator};
-use std::slice;
 use std::fmt::{Display, Debug, Formatter, Result};
 use typenum::{Unsigned};
 use generic_array::{GenericArray, ArrayLength};
@@ -9,6 +8,14 @@ use generic_array::{GenericArray, ArrayLength};
 pub struct Vector<T, N>
   where N: ArrayLength<T> {
   a: GenericArray<T, N>
+}
+
+impl<T, N> Default for Vector<T, N>
+  where T: Default,
+        N: ArrayLength<T> {
+  fn default() -> Self {
+    Self{a: GenericArray::<T, N>::default()}
+  }
 }
 
 impl<T, N> Display for Vector<T, N> 
