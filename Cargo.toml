@@ -3,14 +3,16 @@ name = "adtensor"
 version = "0.0.3"
 authors = ["Charles Earp <charles.r.earp@gmail.com>"]
 edition = "2018"
-description = "Machine learning library with auto differentiation of arbitrary dimensional stack tensors."
+description = "Graph based machine learning libray built on ndarray."
 license = "GPL-3.0"
 repository = "https://github.com/charles-r-earp/adtensor"
-keywords = ["Auto", "Learning", "AI", "Tensor", "Matrix"]
+keywords = ["Auto", "Learning", "ndarray", "Tensor"]
 
 [dependencies]
-generic-array = "0.12.0"
-typenum = "1.10.0"
+rand = "0.6.5"
+matrixmultiply = "0.2.2"
+arrayvec = "0.4.10"
+smallvec = "0.6.9"
 
 [profile.dev]
 opt-level = 0
@@ -20,10 +22,7 @@ opt-level = 3
 
 [dev-dependencies]
 criterion = "0.2"
-ndarray = "0.12.1"
-nalgebra = "0.18.0"
-
 
 [[bench]]
-name = "bench_vector"
+name = "bench_tensor_dot"
 harness = false

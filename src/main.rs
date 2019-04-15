@@ -1,14 +1,9 @@
-use adtensor::*;
-use typenum::*;
-use generic_array::*;
+use adtensor::{shape::Shape, tensor::Tensor};
+use rand::distributions::{StandardNormal};
 
 fn main() {
-  let x = <tnsr![i32; U3; RMaj]>::from(
-    arr![i32; 0, 1, 2]
-  );
-  let y = <tnsr![i32; U3; CMaj]>::from(
-    arr![i32; 0, 1, 2]
-  );
-  let z = x.dot(&y); 
-  println!("{:?} =\n{:?} dot\n{:?}", &z, &x, &y);
+  let a = Shape::new([1, 2]);
+  let b = Shape::new([3]);
+  let c = Shape::broadcast(&a, &b);
+  println!("{:?} and {:?} make {:?}", &a, &b, &c);
 }
