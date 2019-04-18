@@ -3,11 +3,12 @@ use crate::small_arrayvec::SmallArrayVec;
 use crate::tensor_expr::TensorExpr;
 use std::ops::{Deref, DerefMut};
 use std::slice;
-use std::iter::{IntoIterator};
+use std::iter::{IntoIterator, FromIterator};
 use smallvec::{SmallVec};
 use rand::distributions::{Distribution};
+use num_traits::AsPrimitive;
 
-type SVec<T> = SmallArrayVec<[T; 128]>;
+type SVec<T> = Vec<T>;//SmallArrayVec<[T; 32]>;
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct Tensor<T> {
@@ -30,15 +31,6 @@ impl<T> DerefMut for Tensor<T> {
   }
 }
 
-/*impl<'a, T> IntoIterator for &'a Tensor<T> {
-  type Item = T;
-  type IntoIter = slice::Iter<'a, T>;
-  #[inline]
-  fn into_iter(self) -> Self::IntoIter {
-    self.a.iter()
-  }
-}*/
-
 impl<T> IntoIterator for Tensor<T> {
   type Item = T;
   type IntoIter = <SVec<T> as IntoIterator>::IntoIter;
@@ -49,6 +41,7 @@ impl<T> IntoIterator for Tensor<T> {
 }
 
 impl<T> Tensor<T> {
+  /*#[inline]
   pub fn new<D, V>(d: D, v: V) -> Self
     where T: Copy,
           D: AsRef<[usize]>,
@@ -58,31 +51,37 @@ impl<T> Tensor<T> {
     debug_assert_eq!(v.len(), s.size());
     let a = SVec::from_slice(v.as_ref());
     Self{s, a}
-  } 
+  } */
+  /*#[inline]
   pub fn fill<D>(d: D, v: T) -> Self
     where T: Clone,
           D: AsRef<[usize]> {
     let s = Shape::new(d);
     let a = SVec::from_elem(v, s.size());
     Self{s, a}
-  }  
+  }*/  
+  #[inline]
   pub fn rand<D, R, U>(d: D, r: R) -> Self
     where D: AsRef<[usize]>,
           R: Distribution<U>,
-          T: From<U> {
+          T: 'static + Copy,
+          U: AsPrimitive<T> {
     let s = Shape::new(d);
     let n = s.size();
     let mut a = SVec::<T>::with_capacity(n);
-    (0..n).for_each(|_| a.push(r.sample(&mut rand::thread_rng()).into()));
+    (0..n).for_each(|_| a.push(r.sample(&mut rand::thread_rng()).as_()));
     Self{s, a}
   }
+  #[inline]
   pub fn from<E>(t: TensorExpr<E>) -> Self
     where TensorExpr<E>: IntoIterator<Item=T> {
     let s = t.shape().to_owned();
-    let mut a = SVec::<T>::with_capacity(s.size());
-    a.insert_many(0, t);
-    Self{s, a}
+    //let mut a = SVec::<T>::with_capacity(s.size());
+    //t.into_iter()
+    // .for_each(|x| {});
+    Self{s, a: Vec::from_iter(t)}
   }
+  #[inline]
   pub fn shape<'a>(&'a self) -> &'a Shape {
     &self.s
   }

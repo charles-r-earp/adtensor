@@ -1,9 +1,8 @@
-use adtensor::{shape::Shape, tensor::Tensor};
-use rand::distributions::{StandardNormal};
+use adtensor::adscalar::{ADScalar};
+
 
 fn main() {
-  let a = Shape::new([1, 2]);
-  let b = Shape::new([3]);
-  let c = Shape::broadcast(&a, &b);
-  println!("{:?} and {:?} make {:?}", &a, &b, &c);
+  let x = vec![ADScalar::new(1.); 10];
+  let y: Vec<ADScalar<f32>> = x.iter().map(|&x| if x.v > 0. {x} else {ADScalar::from(0.)}).collect();
+  println!("x = {:?}, y = {:?}", &x, &y); 
 }
