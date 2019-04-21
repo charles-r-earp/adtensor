@@ -3,16 +3,14 @@ name = "adtensor"
 version = "0.0.3"
 authors = ["Charles Earp <charles.r.earp@gmail.com>"]
 edition = "2018"
-description = "Graph based machine learning libray built on ndarray."
+description = "Graph based machine learning library."
 license = "GPL-3.0"
 repository = "https://github.com/charles-r-earp/adtensor"
-keywords = ["Auto", "Learning", "ndarray", "Tensor"]
+keywords = ["Auto", "Learning", "Tensor", "Grad", "Net"]
 
 [dependencies]
 rand = "0.6.5"
 matrixmultiply = "0.2.2"
-arrayvec = "0.4.10"
-smallvec = "0.6.9"
 num-traits = "0.2.6"
 
 [profile.dev]

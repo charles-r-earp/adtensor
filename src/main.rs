@@ -1,8 +1,13 @@
-use adtensor::adscalar::{ADScalar};
-
+use adtensor::tensor::{Shape, Tensor};
 
 fn main() {
-  let x = vec![ADScalar::new(1.); 10];
-  let y: Vec<ADScalar<f32>> = x.iter().map(|&x| if x.v > 0. {x} else {ADScalar::from(0.)}).collect();
-  println!("x = {:?}, y = {:?}", &x, &y); 
+  let x = Tensor::new(Shape::from([2]), vec![1, 2]);
+  let y = Tensor::new(Shape::from([4]), vec![1, 2, 3, 4]);
+  let mut z = [0, 0, 0, 0];
+  z.iter_mut()
+   .zip(x.iter().cycle().zip(y.iter()))
+   .for_each(|(c, (&a, &b))| *c = a + b);
+  println!("{:?}", &z);
+  let w = &x + y * &x;
+  println!("{:?}", &w);
 }

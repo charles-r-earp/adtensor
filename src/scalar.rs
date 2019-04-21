@@ -1,9 +1,9 @@
-use crate::activation::{Activate, Relu, Sigmoid};
 use std::ops::{Deref, Add, Sub, Mul, Div, Neg};
+use num_traits::{Zero, Float};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)] 
 pub struct Scalar<T> {
-  pub v: T
+  v: T
 }
 
 impl<T> Scalar<T> {
@@ -17,6 +17,7 @@ impl<T> From<T> for Scalar<T> {
     Self{v}
   }
 }
+
 
 macro_rules! impl_scalar_op {
   ($op:tt, $optrait:ident, $func:ident) => {
@@ -39,7 +40,32 @@ impl_scalar_op!(/, Div, div);
 impl<T> Neg for Scalar<T>
   where T: Neg<Output=T> {
   type Output = Self;
+  #[inline]
   fn neg(self) -> Self {
     Self{v: -self.v}
+  }
+}
+
+impl<T> Zero for Scalar<T>
+  where T: Zero + Copy {
+  #[inline]
+  fn zero() -> Self {
+    Self::from(T::zero())
+  }
+  #[inline]
+  fn is_zero(&self) -> bool {
+    self.v.is_zero()
+  }
+}
+
+pub trait ScalarLike<T> {
+  fn v(self) -> T;
+}
+
+impl<T> ScalarLike<T> for Scalar<T>
+  where T: Copy {
+  #[inline]
+  fn v(self) -> T {
+    self.v
   }
 }
