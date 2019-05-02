@@ -12,6 +12,8 @@ keywords = ["Auto", "Learning", "Tensor", "Grad", "Net"]
 rand = "0.6.5"
 matrixmultiply = "0.2.2"
 num-traits = "0.2.6"
+itertools = "0.8.0"
+prettytable-rs = "0.8.0"
 
 [profile.dev]
 opt-level = 0

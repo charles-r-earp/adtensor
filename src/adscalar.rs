@@ -1,4 +1,4 @@
-use crate::scalar::{Scalar, ScalarLike};
+use crate::scalar::{Scalar};
 use num_traits::{Zero, One, Float};
 use std::ops::{Deref, Add, Sub, Mul, Div, Neg};
 
@@ -14,14 +14,17 @@ impl<T> ADScalar<T> {
     where T: One {
     Self{v, d: T::one()}
   }
-}
-
-impl<T> ScalarLike<T> for ADScalar<T> {
   #[inline]
-  fn v(self) -> T {
+  pub fn v(self) -> T
+    where T: Copy {
     self.v
   }
-} 
+  #[inline]
+  pub fn d(self) -> T
+    where T: Copy {
+    self.d
+  }
+}
 
 impl<T> From<T> for ADScalar<T>
   where T: Zero {

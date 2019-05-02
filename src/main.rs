@@ -1,13 +1,12 @@
-use adtensor::tensor::{Shape, Tensor};
+use adtensor::shape::Shape;
+use adtensor::tensor::Tensor;
+use adtensor::graph::{Graph, Param, Optimizer};
+use std::iter::IntoIterator;
 
-fn main() {
-  let x = Tensor::new(Shape::from([2]), vec![1, 2]);
-  let y = Tensor::new(Shape::from([4]), vec![1, 2, 3, 4]);
-  let mut z = [0, 0, 0, 0];
-  z.iter_mut()
-   .zip(x.iter().cycle().zip(y.iter()))
-   .for_each(|(c, (&a, &b))| *c = a + b);
-  println!("{:?}", &z);
-  let w = &x + y * &x;
-  println!("{:?}", &w);
+fn main() { 
+  let g = Graph::new();
+  let x = g.var(Tensor::from(vec![3f32]));
+  let mut w = Param::from(Tensor::from(vec![4f32]));
+  x.register(vec![&mut w]);
+  let y = &x * &w;
 }

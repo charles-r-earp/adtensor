@@ -10,6 +10,11 @@ impl<T> Scalar<T> {
   pub fn new(v: T) -> Self {
     Self{v}
   }
+  #[inline]
+  pub fn v(self) -> T 
+    where T: Copy {
+    self.v
+  }
 }
 
 impl<T> From<T> for Scalar<T> {
@@ -62,10 +67,3 @@ pub trait ScalarLike<T> {
   fn v(self) -> T;
 }
 
-impl<T> ScalarLike<T> for Scalar<T>
-  where T: Copy {
-  #[inline]
-  fn v(self) -> T {
-    self.v
-  }
-}
