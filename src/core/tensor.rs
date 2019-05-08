@@ -2,8 +2,9 @@ use crate::core::shape::Shape;
 use std::ops::{Deref, DerefMut, Add, AddAssign, Sub, Mul, Div};
 use std::mem;
 use matrixmultiply::{sgemm, dgemm};
+use num_traits::{Zero, One};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Tensor<T> {
   pub s: Shape,
   pub v: Vec<T>
@@ -35,6 +36,47 @@ impl<T> Tensor<T> {
     Self{s: s.into(), v: Vec::new()}
   }
   #[inline]
+  pub unsafe fn shape_uninit<S>(s: S) -> Self
+    where Shape: From<S> {
+    let s = Shape::from(s);
+    let n = s.product();
+    let mut t = Tensor{s, v: Vec::with_capacity(n)};
+    t.v.set_len(n);
+    t
+  }
+  #[inline]
+  pub fn shape_fn<S, F>(s: S, f: F) -> Self
+    where Shape: From<S>,
+          F: FnMut()->T {
+    let s = Shape::from(s);
+    let n = s.product();
+    let mut t = Tensor{s, v: Vec::with_capacity(n)};
+    t.v.resize_with(n, f);
+    t
+  }
+  #[inline]
+  pub fn shape_elem<S>(s: S, x: T) -> Self
+    where Shape: From<S>,
+          T: Clone {
+    let s = Shape::from(s);
+    let n = s.product();
+    let mut t = Tensor{s, v: Vec::with_capacity(n)};
+    t.v.resize(n, x);
+    t
+  }
+  #[inline]
+  pub fn zeros<S>(s: S) -> Self
+    where Shape: From<S>,
+          T: Zero + Clone {
+    Self::shape_elem(s, T::zero())
+  }
+  #[inline]
+  pub fn ones<S>(s: S) -> Self
+    where Shape: From<S>,
+          T: One + Clone {
+    Self::shape_elem(s, T::one())
+  }
+  #[inline]
   pub fn len(&self) -> usize {
     self.v.len()
   }
@@ -44,9 +86,9 @@ impl<T> Tensor<T> {
     let t = Tensor{s: s.into(), v: self.v};
     debug_assert!({
       assert!(
-        t.v.len() == 0 || t.len() == t.s.product(), 
+        t.len() == t.s.product(), 
         format!(
-          "Can not reshape tensor with len {} to shape {:?} with product {}!",
+          "Cannot reshape tensor with len {} to shape {:?} with product {}!",
           &t.len(), &t.s, &t.s.product()
         )
       );
@@ -54,7 +96,7 @@ impl<T> Tensor<T> {
     });
     t
   }
-  #[inline]
+  /*#[inline]
   pub fn init_fn<F>(self, f: F) -> Self
     where F: FnMut()->T {
     let mut t = Self{s: self.s, v: self.v};
@@ -63,14 +105,12 @@ impl<T> Tensor<T> {
     unsafe { t.v.set_len(0) };
     t.v.resize_with(n, f);
     t
-  }
+  }*/
   #[inline]
   pub fn map<F>(&self, mut f: F) -> Self
     where F: FnMut(T)->T,
           T: Copy {
-    let n = self.s.product();
-    let mut x = Tensor{s: self.s.clone(), v: Vec::with_capacity(n)};
-    unsafe { x.v.set_len(n) };
+    let mut x = unsafe { Tensor::shape_uninit(self.s.clone()) };
     self.iter().zip(x.iter_mut())
         .for_each(|(&t, x)| *x = f(t));
     x
@@ -78,6 +118,7 @@ impl<T> Tensor<T> {
 }
 
 impl<T> From<Vec<T>> for Tensor<T> {
+  #[inline]
   fn from(v: Vec<T>) -> Self {
     Self{s: vec![1, v.len()].into(), v}
   }
@@ -90,60 +131,18 @@ macro_rules! impl_tensor_op {
       type Output = Tensor<T>;
       #[inline]
       fn $func(self, rhs: &'b Tensor<T>) -> Self::Output {
-        let (n1, n2, s) = self.s.broadcast(&rhs.s); 
-        let n = s.product();
-        let mut t = Tensor{s, v: Vec::with_capacity(n)};
-        unsafe { t.v.set_len(n) };
-        if n1 > n2 {
-          self.v.chunks_exact(n2)
-              .zip(t.chunks_exact_mut(n2))
-              .for_each(|(a, c)| {
+        let s = self.s.broadcast(&rhs.s); 
+        let mut t = unsafe { Tensor::shape_uninit(s) };
+        self.v.chunks_exact(rhs.len())
+            .zip(t.chunks_exact_mut(rhs.len()))
+            .for_each(|(a, c)| {
           a.iter().zip(rhs.iter())
                   .zip(c.iter_mut())
                   .for_each(|((&a, &b), c)| *c = a $op b);
-          });
-        }
-        else if n1 < n2 {
-          rhs.v.chunks_exact(n1)
-              .zip(t.chunks_exact_mut(n1))
-              .for_each(|(b, c)| {
-          self.iter().zip(b.iter())
-                  .zip(c.iter_mut())
-                  .for_each(|((&a, &b), c)| *c = a $op b);
-          });
-        }
-        else {
-          self.iter().zip(rhs.iter())
-                     .zip(t.iter_mut())
-                     .for_each(|((&a, &b), c)| *c = a $op b);
-        }
+        });
         t
       }
     }
-    /*impl<'b, T> $optrait<&'b Tensor<T>> for Tensor<T>
-      where T: Copy + $optrait<Output=T> {
-      type Output = Tensor<T>;
-      #[inline]
-      fn $func(self, rhs: &'b Tensor<T>) -> Self::Output {
-        &self $op rhs
-      }
-    }
-    impl<'a, T> $optrait<Tensor<T>> for &'a Tensor<T>
-      where T: Copy + $optrait<Output=T> {
-      type Output = Tensor<T>;
-      #[inline]
-      fn $func(self, rhs: Tensor<T>) -> Self::Output {
-        self $op &rhs
-      }
-    }
-    impl<T> $optrait<Tensor<T>> for Tensor<T>
-      where T: Copy + $optrait<Output=T> {
-      type Output = Tensor<T>;
-      #[inline]
-      fn $func(self, rhs: Tensor<T>) -> Self::Output {
-        &self $op &rhs
-      }
-    }*/
   }
 }
 
@@ -178,10 +177,8 @@ macro_rules! impl_tensor_mm {
       #[inline]
       fn mm(self, rhs: &'b Tensor<$t>) -> Tensor<$t> {
         let s = self.s.broadcast_mm(&rhs.s);
-        let n = s.product();
-        let mut t = Tensor{s, v: Vec::with_capacity(n)};
-        unsafe { t.v.set_len(n) };
-        let m = if self.s.len() > 1 {self.s[1]} else {1};
+        let mut t = unsafe { Tensor::shape_uninit(s) };
+        let m = self.s[1];
         let k = self.s[0];
         let n = rhs.s[0];
         self.v.chunks_exact(m * k).cycle()
@@ -216,6 +213,36 @@ macro_rules! impl_tensor_mm {
 impl_tensor_mm!(f32, sgemm);
 impl_tensor_mm!(f64, dgemm);
 
-    
-
+#[cfg(test)]
+mod tests {
+  use crate::core::shape::Shape;
+  use crate::core::tensor::Tensor;
+  #[test]
+  fn test_ones() {
+    let x = Tensor::<f32>::ones(vec![1, 2]);
+    assert_eq!(x.v, vec![1., 1.]); 
+  }
+  #[test]
+  fn test_reshape() {
+    let x = Tensor::from(vec![1., 2.]);
+    let y = x.reshape(vec![2, 1]);
+    assert_eq!(y.s, Shape::from(vec![2, 1]));
+  }
+  #[test]
+  fn test_add() {
+    let x = Tensor::<f32>{s: vec![2, 2].into(), v: vec![1., 2., 3., 4.]}; 
+    let y = Tensor::from(vec![1., 2.]);
+    let z = Tensor{s: vec![2, 2].into(), v: vec![2., 4., 4., 6.]};
+    assert_eq!(&x + &y, z);
+  }
+  #[test]
+  fn test_mm() {
+    use crate::core::tensor::Matmul;
+    let x = Tensor::<f32>{s: vec![1, 2, 2].into(), v: vec![1., 2., 3., 4.]};
+    let w = Tensor::ones(vec![2, 2, 3]);
+    let y = Tensor{s: vec![2, 2, 3].into(), v: vec![3., 3., 3., 7., 7., 7.,
+                                                    3., 3., 3., 7., 7., 7.]};
+    assert_eq!(x.mm(&w), y);
+  }
+}
  

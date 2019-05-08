@@ -26,5 +26,5 @@ criterion = "0.2"
 ndarray = "0.12.1"
 
 [[bench]]
-name = "bench_elementwise"
+name = "bench_adtensor"
 harness = false

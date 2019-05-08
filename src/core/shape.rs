@@ -32,53 +32,56 @@ impl Shape {
   }
   #[inline]
   fn can_broadcast<'b>(&self, rhs: &'b Self) -> bool {
-    let mut d = 0;
-    self.iter().chain(repeat(&1))
-        .zip(rhs.iter().chain(repeat(&1)))
-        .take(max(self.len(), rhs.len()))
-        .all(|(&a, &b)| {
-      if a == b {
-        true
-      }
-      else if a == 1 && d != -1 {
-        d = 1;
-        true
-      }
-      else if b == 1 && d != 1 {
-        d = -1;
-        true
-      }
-      else { false }
-    })   
+    if self.len() == rhs.len() {
+      if self.s[1..] == rhs.s[1..] {
+        return self.s[0] == 1 
+          || rhs.s[0] == 1
+          || self.s[0] == rhs.s[0];
+      }   
+    }
+    false
   }             
   #[inline]
-  pub fn broadcast<'b>(&self, rhs: &'b Self) -> (usize, usize, Self) {
-    let n1 = self.product();
-    let n2 = rhs.product();
+  pub fn broadcast<'b>(&self, rhs: &'b Self) -> Self {
     debug_assert!(self.can_broadcast(&rhs),
                   format!("Can't broadcast shapes {:?} and {:?}!", &self, &rhs));
-    (n1, n2, if n1 > n2 {self.clone()} else { if self.len() > rhs.len() {self.clone()} else {rhs.clone()} })
+    if rhs.s[0] != 1 {rhs.clone()} else {self.clone()}
+  }
+  #[inline]
+  pub fn can_broadcast_mm<'b>(&self, rhs: &'b Self) -> bool {
+    if self.len() == rhs.len() {
+      if self.len() > 2 {
+        let n = self.len();
+        if self.s[1..n-2] != rhs.s[1..n-2] {
+          return false;
+        }
+        if !(self.s[0] == 1
+          || rhs.s[0] == 1
+          || self.s[0] == rhs.s[0]) {
+          return false;
+        }
+      }  
+      return self[0] == rhs[1];
+    }
+    false
   }
   #[inline]
   pub fn broadcast_mm<'b>(&self, rhs: &'b Self) -> Self {
-    let mut s = self.clone();
-    debug_assert!(self.len() >= 2
-                  && rhs.len() >= 2
-                  && self.len() >= rhs.len()
-                  && (self[0] == rhs[1] || self[0] == 1 || rhs[1] == 1)
-                  && !self.iter()
-                          .zip(rhs.iter())
-                          .skip(2)
-                          .any(|(a, b)| a < b), 
+    debug_assert!(self.can_broadcast_mm(&rhs)
                   "{}", 
                   format!("Can't matmul shapes {:?} and {:?}!", &self, &rhs));
+    let mut s = self.clone();
     s[0] = rhs[0];
+    if self.s[0] == 1 {
+      s.s[0] = rhs.s[0];
+    }
     s
   }
 }
 
 impl<S> From<S> for Shape
   where Vec<usize>: From<S> {
+  #[inline]
   fn from(s: S) -> Self {
     Self{s: s.into()}
   }
@@ -109,11 +112,21 @@ impl Debug for Shape {
 
 #[cfg(test)]
 mod tests {
+  use crate::core::shape::Shape;
   #[test]
   fn test_broadcast() {
-    use crate::core::shape::Shape;
-    assert!(Shape::from(vec![1, 2]).can_broadcast(&Shape::from(vec![3, 1, 2])));
-    assert!(Shape::from(vec![1, 2]).can_broadcast(&Shape::from(vec![1, 1])));
-    assert!(!Shape::from(vec![2, 1, 1]).can_broadcast(&Shape::from(vec![1, 3])));
+    assert_eq!(Shape::from(vec![1, 1, 2]).broadcast(&Shape::from(vec![3, 1, 2])),
+               Shape::from(vec![3, 1, 2]));
+    assert_eq!(Shape::from(vec![1, 2]).broadcast(&Shape::from(vec![2, 2])), 
+               Shape::from(vec![2, 2]));
+    assert!(!Shape::from(vec![2, 1, 1]).can_broadcast(&Shape::from(vec![2, 1, 3])));
+  }
+  #[test]
+  fn test_broadcast_mm() {
+    assert_eq!(Shape::from(vec![2, 3]).broadcast_mm(&Shape::from(vec![3, 4])),
+               Shape::from(vec![2, 4]));
+    assert_eq!(Shape::from(vec![2, 2, 3]).broadcast_mm(&Shape::from(vec![1, 3, 4])),
+               Shape::from(vec![2, 2, 4]));
+    assert!(!Shape::from(vec![2, 1, 2, 3]).can_broadcast_mm(&Shape::from(vec![1, 2, 3, 4])));
   }
 }
