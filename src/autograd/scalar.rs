@@ -3,17 +3,12 @@ use num_traits::{Zero, Float};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)] 
 pub struct Scalar<T> {
-  v: T
+  pub v: T
 }
 
 impl<T> Scalar<T> {
   pub fn new(v: T) -> Self {
     Self{v}
-  }
-  #[inline]
-  pub fn v(self) -> T 
-    where T: Copy {
-    self.v
   }
 }
 
@@ -61,9 +56,5 @@ impl<T> Zero for Scalar<T>
   fn is_zero(&self) -> bool {
     self.v.is_zero()
   }
-}
-
-pub trait ScalarLike<T> {
-  fn v(self) -> T;
 }
 

@@ -5,7 +5,7 @@ use std::ops::{Deref, Add, Sub, Mul, Div};
 use std::iter::IntoIterator;
 use std::mem;
 use num_traits::{Zero, One};
-use itertools::Itertools;
+use itertools::{Itertools};
 
 #[derive(Debug)]
 pub struct Partial<T> {
@@ -38,13 +38,6 @@ impl<F, T> Optimizer<T> for F
   }
 }
 
-#[derive(Debug)]
-pub struct Param<T> {
-  i: Option<usize>,
-  v: Tensor<T>,
-  on: bool
-}
-
 impl<T> From<Tensor<T>> for Param<T> {
   fn from(v: Tensor<T>) -> Self {
     Self{i: None, v, on: true}
@@ -61,7 +54,7 @@ impl<T> Graph<T> {
     Self{v: RefCell::new(Vec::new())}
   }
 }
-
+/*
 impl<T> Graph<T> {
   #[inline]
   pub fn var<'g>(&'g self, v: Tensor<T>) -> Var<'g, T> {
@@ -69,23 +62,25 @@ impl<T> Graph<T> {
     vts.push(Vertex::new());
     Var{g: self, i: vts.len() - 1, v, on: true}
   } 
-}
-
+}*/
+/*
 macro_rules! impl_graph_backward {
   ($t:ty) => {
     impl Graph<$t> {
       #[inline]
-      pub fn backward<'p, 'o, 'g, P>(&'g mut self, params: P, opt: &'o mut Optimizer<$t>)
+      pub fn backward<'p, 'o, 'g, P>(&'g self, params: P, opt: &'o mut Optimizer<$t>)
         where P: 'p + IntoIterator<Item=&'p mut Param<$t>> {
         let mut params = params.into_iter()
                                .filter(|p| p.i.is_some())
                                .sorted_by(|a, b| a.i.unwrap().cmp(&b.i.unwrap()))
                                .rev();
+        let mut par = params.next();
         let mut vts = self.v.borrow_mut();
         let mut g = UnsafeCell::new(Vec::<Tensor<$t>>::with_capacity(vts.len()));
         let mut grad_mut = unsafe { &mut *g.get() };
         unsafe { grad_mut.set_len(grad_mut.capacity()) };
         let grad = unsafe { &mut *g.get() };
+        grad_mut[grad.len() - 1] = Tensor::from(vec![1.]);
         vts.iter_mut()
            .enumerate()
            .rev()
@@ -100,14 +95,26 @@ macro_rules! impl_graph_backward {
               grad_mut[p.i] = &grad[i] * &p.g;
             }
           });
+          //println!("grad[{}]: {:?}", &i, &grad[i]);
+          if let Some(ref mut p) = par {
+            debug_assert!(grad[i].s == p.v.s);
+            p.v.iter_mut()
+               .zip(grad[i].iter())
+               .for_each(|(v, &d)| { 
+              *v += opt.step(d);
+            });
+            p.i = None;
+            par = params.next();
+          }
         });
+        vts.clear();
       }
     }
   }
 }
 
 impl_graph_backward!(f32);
-impl_graph_backward!(f64);
+impl_graph_backward!(f64);*/
 
 impl<T> Debug for Graph<T>
   where T: Debug {
@@ -122,7 +129,7 @@ pub struct Var<'g, T> {
   v: Tensor<T>,
   on: bool
 }
-
+/*
 impl<'g, T> Var<'g, T> {
   #[inline]
   pub fn no_grad(self) -> Self {
@@ -308,4 +315,4 @@ impl<'a, 'b, 'g, T> Mul<&'b Param<T>> for &'a Var<'g, T>
     Var{g: self.g, i, v: &self.v * &rhs.v, on: self.on}
   }
 }
-
+*/

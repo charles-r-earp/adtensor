@@ -1,5 +1,6 @@
-use crate::shape::{Shape};
-use std::ops::{Deref, DerefMut, Add, Sub, Mul, Div};
+use crate::core::shape::Shape;
+use std::ops::{Deref, DerefMut, Add, AddAssign, Sub, Mul, Div};
+use std::mem;
 use matrixmultiply::{sgemm, dgemm};
 
 #[derive(Default, Debug, Clone)]
@@ -63,22 +64,22 @@ impl<T> Tensor<T> {
     t.v.resize_with(n, f);
     t
   }
-  /*#[inline]
-  pub fn map<F>(&self, f: F) -> Self
-    where F: FnMut(&T)->T,
+  #[inline]
+  pub fn map<F>(&self, mut f: F) -> Self
+    where F: FnMut(T)->T,
           T: Copy {
     let n = self.s.product();
     let mut x = Tensor{s: self.s.clone(), v: Vec::with_capacity(n)};
     unsafe { x.v.set_len(n) };
     self.iter().zip(x.iter_mut())
-        .for_each(|(t, x)| *x = *t);
+        .for_each(|(&t, x)| *x = f(t));
     x
-  }*/
+  }
 }
 
 impl<T> From<Vec<T>> for Tensor<T> {
   fn from(v: Vec<T>) -> Self {
-    Self{s: vec![v.len()].into(), v}
+    Self{s: vec![1, v.len()].into(), v}
   }
 }
 
@@ -151,17 +152,36 @@ impl_tensor_op!(-, Sub, sub);
 impl_tensor_op!(*, Mul, mul);
 impl_tensor_op!(/, Div, div);
 
+impl<'b, T> AddAssign<&'b Tensor<T>> for Tensor<T>
+  where T: Copy + Add<Output=T> {
+  fn add_assign(&mut self, rhs: &'b Tensor<T>) {
+    if self.len() == 0 {
+      let mut tmp = rhs.clone();
+      mem::swap(self, &mut tmp);
+    }
+    else {
+      let mut tmp = self as &Self + rhs;
+      mem::swap(self, &mut tmp);  
+    }
+  }
+}
+
+pub trait Matmul<R> {
+  type Output;
+  fn mm(self, rhs: R) -> Self::Output;
+}
 
 macro_rules! impl_tensor_mm {
   ($t:ty, $mm:ident) => {
-    impl Tensor<$t> {
+    impl<'a, 'b> Matmul<&'b Tensor<$t>> for &'a Tensor<$t> {
+      type Output = Tensor<$t>;
       #[inline]
-      pub fn mm<'a, 'b>(&'a self, rhs: &'b Tensor<$t>) -> Tensor<$t> {
+      fn mm(self, rhs: &'b Tensor<$t>) -> Tensor<$t> {
         let s = self.s.broadcast_mm(&rhs.s);
         let n = s.product();
         let mut t = Tensor{s, v: Vec::with_capacity(n)};
         unsafe { t.v.set_len(n) };
-        let m = self.s[1];
+        let m = if self.s.len() > 1 {self.s[1]} else {1};
         let k = self.s[0];
         let n = rhs.s[0];
         self.v.chunks_exact(m * k).cycle()

@@ -1,11 +1,11 @@
-use crate::scalar::{Scalar};
+use crate::core::scalar::{Scalar};
 use num_traits::{Zero, One, Float};
 use std::ops::{Deref, Add, Sub, Mul, Div, Neg};
 
 #[derive(Default, Debug, Clone, Copy)] 
 pub struct ADScalar<T> {
-  v: T,
-  d: T
+  pub v: T,
+  pub d: T
 }
 
 impl<T> ADScalar<T> {
