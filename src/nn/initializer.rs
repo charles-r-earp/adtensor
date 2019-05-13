@@ -1,4 +1,4 @@
-use crate::core::{Shape, Tensor};
+use crate::{Shape, Tensor};
 use std::marker::PhantomData;
 use rand::distributions::{Distribution, Normal};
 use num_traits::{Float};
@@ -30,7 +30,7 @@ impl<T> Initializer<T> for BasicInit<T>
       else {1};
     // https://medium.com/usf-msds/deep-learning-best-practices-1-weight-initialization-14e5c0295b94
     let n = Normal::new(0., (2./(d0 + d1).to_f64().unwrap()).sqrt());
-    Tensor::shape_fn(s, || T::from(n.sample(&mut rand::thread_rng())).unwrap())
+    Tensor::shape_fn(s, |_| T::from(n.sample(&mut rand::thread_rng())).unwrap())
   }
 }
 
@@ -53,6 +53,6 @@ impl<T> Initializer<T> for XavierInit<T>
       else {1};
     // https://medium.com/usf-msds/deep-learning-best-practices-1-weight-initialization-14e5c0295b94
     let n = Normal::new(0., (1./d1.to_f64().unwrap()).sqrt());
-    Tensor::shape_fn(s, || T::from(n.sample(&mut rand::thread_rng())).unwrap())
+    Tensor::shape_fn(s, |_| T::from(n.sample(&mut rand::thread_rng())).unwrap())
   }
 }

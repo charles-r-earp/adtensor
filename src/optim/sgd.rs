@@ -1,7 +1,6 @@
-use crate::core::Tensor;
-use crate::autograd::Loss;
+use crate::Tensor;
 use crate::optim::Optimizer;
-use num_traits::Float;
+use std::ops::{SubAssign, Mul};
 
 #[derive(Debug)]
 pub struct SGD<T> {
@@ -14,12 +13,12 @@ impl<T> SGD<T> {
   }
 }
 
-impl<T> Optimizer<T> for SGD<T>
-  where T: Float {
-  fn step<'p>(&mut self, p: Vec<&'p mut Tensor<T>>, loss: Loss<T>) {
-    p.into_iter().zip(loss.g.into_iter())
-                .for_each(|(p, g)| {
-      *p += &g.map(|d| -self.lr * d)
+impl<'p, 'dy, T> Optimizer<'p, 'dy, T> for SGD<T>
+  where T: SubAssign<T> + Mul<T, Output=T> + Copy {
+  fn step(&mut self, p: &'p mut Tensor<T>, dy: &'dy Tensor<T>) {
+    p.iter_mut().zip(dy.iter())
+                .for_each(|(p, &dy)| {
+      *p -= self.lr * dy;
     });
   }
 }

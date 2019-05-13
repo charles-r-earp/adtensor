@@ -1,4 +1,4 @@
-use crate::core::{Shape, Shaped};
+use crate::{Shape, Shaped};
 use std::ops::{Deref, DerefMut, Add, AddAssign, Sub, Mul, Div};
 use std::mem;
 use matrixmultiply::{sgemm, dgemm};
@@ -112,7 +112,7 @@ impl<T> Tensor<T> {
     t.v.resize_with(n, f);
     t
   }*/
-  #[inline]
+  /*#[inline]
   pub fn map<F>(&self, mut f: F) -> Self
     where F: FnMut(T)->T,
           T: Copy {
@@ -120,17 +120,36 @@ impl<T> Tensor<T> {
     self.iter().zip(x.iter_mut())
         .for_each(|(&t, x)| *x = f(t));
     x
-  }
-  #[inline]
+  }*/
+  /*#[inline]
   pub fn param_key(&self) -> usize {
     self as *const Self as usize
-  }
+  }*/
 }
 
 impl<T> From<Vec<T>> for Tensor<T> {
   #[inline]
   fn from(v: Vec<T>) -> Self {
     Self{s: vec![1, v.len()].into(), v}
+  }
+}
+
+pub trait TensorMap<A, B> {
+  type Output;
+  fn map<F>(&self, f: F) -> Self::Output
+    where F: FnMut(A)->B;
+}
+
+impl<A, B> TensorMap<A, B> for Tensor<A>
+  where A: Copy {
+  type Output = Tensor<B>;
+  #[inline]
+  fn map<F>(&self, mut f: F) -> Tensor<B>
+    where F: FnMut(A)->B {
+    let mut x = unsafe { Tensor::shape_uninit(self.s.clone()) };
+    self.iter().zip(x.iter_mut())
+        .for_each(|(&t, x)| *x = f(t));
+    x
   }
 }
 
@@ -232,12 +251,12 @@ macro_rules! impl_tensor_mm {
         t
       }
     }
-    /*impl<'a, 'b> Matmul<&'b mut Tensor<$t>> for &'a Tensor<$t> {
+    impl<'b> Matmul<&'b Tensor<$t>> for Tensor<$t> {
       type Output = Tensor<$t>;
-      fn mm(self, rhs: &'b mut Tensor<$t>) -> Tensor<$t> {
-        self.mm(rhs as &'b Tensor<$t>)
+      fn mm(self, rhs: &'b Tensor<$t>) -> Tensor<$t> {
+        (&self).mm(rhs)
       }
-    }*/
+    }
   }
 }
 

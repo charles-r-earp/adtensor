@@ -1,6 +1,5 @@
-use crate::core::Tensor;
-use crate::autograd::Loss;
+use crate::Tensor;
 
-pub trait Optimizer<T> {
-  fn step<'p>(&mut self, p: Vec<&'p mut Tensor<T>>, loss: Loss<T>);
+pub trait Optimizer<'p, 'dy, T> {
+  fn step(&mut self, p: &'p mut Tensor<T>, dy: &'dy Tensor<T>);
 }

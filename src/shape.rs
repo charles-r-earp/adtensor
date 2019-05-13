@@ -35,7 +35,7 @@ impl Shape {
     self.s.iter().product::<usize>()
   }
   #[inline]
-  fn can_broadcast<'b>(&self, rhs: &'b Self) -> bool {
+  pub fn can_broadcast<'b>(&self, rhs: &'b Self) -> bool {
     if self.len() == rhs.len() {
       if self.s[1..] == rhs.s[1..] {
         return self.s[0] == 1 
