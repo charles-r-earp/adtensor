@@ -1,4 +1,4 @@
-use crate::core::shape::Shape;
+use crate::core::{Shape, Shaped};
 use std::ops::{Deref, DerefMut, Add, AddAssign, Sub, Mul, Div};
 use std::mem;
 use matrixmultiply::{sgemm, dgemm};
@@ -6,8 +6,14 @@ use num_traits::{Zero, One};
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct Tensor<T> {
-  pub s: Shape,
-  pub v: Vec<T>
+  s: Shape,
+  v: Vec<T>
+}
+
+impl<T> Shaped for Tensor<T> {
+  fn s(&self) -> &Shape {
+    &self.s
+  }
 }
 
 impl<T> Deref for Tensor<T> {
@@ -45,14 +51,14 @@ impl<T> Tensor<T> {
     t
   }
   #[inline]
-  pub fn shape_fn<S, F>(s: S, f: F) -> Self
+  pub fn shape_fn<S, F>(s: S, mut f: F) -> Self
     where Shape: From<S>,
-          F: FnMut()->T {
+          F: FnMut(&Shape)->T {
     let s = Shape::from(s);
     let n = s.product();
-    let mut t = Tensor{s, v: Vec::with_capacity(n)};
-    t.v.resize_with(n, f);
-    t
+    let mut v = Vec::with_capacity(n);
+    v.resize_with(n, || f(&s));
+    Tensor{s, v}
   }
   #[inline]
   pub fn shape_elem<S>(s: S, x: T) -> Self
@@ -115,6 +121,10 @@ impl<T> Tensor<T> {
         .for_each(|(&t, x)| *x = f(t));
     x
   }
+  #[inline]
+  pub fn param_key(&self) -> usize {
+    self as *const Self as usize
+  }
 }
 
 impl<T> From<Vec<T>> for Tensor<T> {
@@ -151,9 +161,24 @@ impl_tensor_op!(-, Sub, sub);
 impl_tensor_op!(*, Mul, mul);
 impl_tensor_op!(/, Div, div);
 
-impl<'b, T> AddAssign<&'b Tensor<T>> for Tensor<T>
+/*impl<'b, T> AddAssign<&'b Tensor<T>> for Tensor<T>
   where T: Copy + Add<Output=T> {
   fn add_assign(&mut self, rhs: &'b Tensor<T>) {
+    if self.len() == 0 {
+      let mut tmp = rhs.clone();
+      mem::swap(self, &mut tmp);
+    }
+    else {
+      let mut tmp = self as &Self + rhs;
+      mem::swap(self, &mut tmp);  
+    }
+  }
+}*/
+
+
+impl<'b> AddAssign<&'b Tensor<f32>> for Tensor<f32>
+  /*where T: Copy + Add<Output=T>*/ {
+  fn add_assign(&mut self, rhs: &'b Tensor<f32>) {
     if self.len() == 0 {
       let mut tmp = rhs.clone();
       mem::swap(self, &mut tmp);
@@ -207,6 +232,12 @@ macro_rules! impl_tensor_mm {
         t
       }
     }
+    /*impl<'a, 'b> Matmul<&'b mut Tensor<$t>> for &'a Tensor<$t> {
+      type Output = Tensor<$t>;
+      fn mm(self, rhs: &'b mut Tensor<$t>) -> Tensor<$t> {
+        self.mm(rhs as &'b Tensor<$t>)
+      }
+    }*/
   }
 }
 

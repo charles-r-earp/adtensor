@@ -4,6 +4,10 @@ use std::iter::{Rev, repeat};
 use std::slice;
 use std::cmp::max;
 
+pub trait Shaped {
+  fn s(&self) -> &Shape;
+}
+
 #[derive(Default, Clone, PartialEq)]
 pub struct Shape {
   s: Vec<usize>
@@ -67,8 +71,7 @@ impl Shape {
   }
   #[inline]
   pub fn broadcast_mm<'b>(&self, rhs: &'b Self) -> Self {
-    debug_assert!(self.can_broadcast_mm(&rhs)
-                  "{}", 
+    debug_assert!(self.can_broadcast_mm(&rhs),
                   format!("Can't matmul shapes {:?} and {:?}!", &self, &rhs));
     let mut s = self.clone();
     s[0] = rhs[0];
