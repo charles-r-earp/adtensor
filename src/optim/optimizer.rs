@@ -1,10 +1,6 @@
-pub trait Optimizer<T> {
-  fn step(&mut self, x: T) -> T;
-}
+use crate::core::Tensor;
+use crate::autograd::Loss;
 
-impl<F, T> Optimizer<T> for F 
-  where F: FnMut(T)->T {
-  fn step(&mut self, x: T) -> T {
-    (self)(x)
-  }
+pub trait Optimizer<T> {
+  fn step<'p>(&mut self, p: Vec<&'p mut Tensor<T>>, loss: Loss<T>);
 }

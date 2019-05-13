@@ -161,7 +161,7 @@ impl_tensor_op!(-, Sub, sub);
 impl_tensor_op!(*, Mul, mul);
 impl_tensor_op!(/, Div, div);
 
-/*impl<'b, T> AddAssign<&'b Tensor<T>> for Tensor<T>
+impl<'b, T> AddAssign<&'b Tensor<T>> for Tensor<T>
   where T: Copy + Add<Output=T> {
   fn add_assign(&mut self, rhs: &'b Tensor<T>) {
     if self.len() == 0 {
@@ -173,9 +173,9 @@ impl_tensor_op!(/, Div, div);
       mem::swap(self, &mut tmp);  
     }
   }
-}*/
+}
 
-
+/*
 impl<'b> AddAssign<&'b Tensor<f32>> for Tensor<f32>
   /*where T: Copy + Add<Output=T>*/ {
   fn add_assign(&mut self, rhs: &'b Tensor<f32>) {
@@ -188,7 +188,7 @@ impl<'b> AddAssign<&'b Tensor<f32>> for Tensor<f32>
       mem::swap(self, &mut tmp);  
     }
   }
-}
+}*/
 
 pub trait Matmul<R> {
   type Output;
