@@ -10,7 +10,7 @@ pub struct Seq<A, B> {
 #[macro_export]
 macro_rules! seq {
   ($a:expr, $b:expr) => { Seq{a: $a, b: $b} };
-  ($a:expr, $b:expr $(, $c:expr)*) => { seq![Seq{$a, $b}, $c, *] }
+  ($a:expr, $b:expr $(, $c:expr)*) => { seq![Seq{a: $a, b: $b}, $($c),*] }
 } 
 
 impl<'a, A, B, X, Y1, Y2> Forward<'a, X> for Seq<A, B>

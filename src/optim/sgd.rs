@@ -2,7 +2,7 @@ use crate::Tensor;
 use crate::optim::Optimizer;
 use std::ops::{SubAssign, Mul};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct SGD<T> {
   pub lr: T
 }

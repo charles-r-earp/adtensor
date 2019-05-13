@@ -172,32 +172,25 @@ macro_rules! impl_tensor_op {
         t
       }
     }
+    impl<'b, T> $optrait<&'b Tensor<T>> for Tensor<T>
+      where T: Copy + $optrait<Output=T> {
+      type Output = Tensor<T>;
+      #[inline]
+      fn $func(self, rhs: &'b Tensor<T>) -> Self::Output {
+        (&self).add(rhs)
+      }
+    }
   }
 }
 
 impl_tensor_op!(+, Add, add);
-impl_tensor_op!(-, Sub, sub);
+/*impl_tensor_op!(-, Sub, sub);
 impl_tensor_op!(*, Mul, mul);
-impl_tensor_op!(/, Div, div);
-
+impl_tensor_op!(/, Div, div);*/
+/*
 impl<'b, T> AddAssign<&'b Tensor<T>> for Tensor<T>
   where T: Copy + Add<Output=T> {
   fn add_assign(&mut self, rhs: &'b Tensor<T>) {
-    if self.len() == 0 {
-      let mut tmp = rhs.clone();
-      mem::swap(self, &mut tmp);
-    }
-    else {
-      let mut tmp = self as &Self + rhs;
-      mem::swap(self, &mut tmp);  
-    }
-  }
-}
-
-/*
-impl<'b> AddAssign<&'b Tensor<f32>> for Tensor<f32>
-  /*where T: Copy + Add<Output=T>*/ {
-  fn add_assign(&mut self, rhs: &'b Tensor<f32>) {
     if self.len() == 0 {
       let mut tmp = rhs.clone();
       mem::swap(self, &mut tmp);

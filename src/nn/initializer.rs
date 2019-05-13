@@ -8,18 +8,36 @@ pub trait Initializer<T> {
   fn init(&self, s: Shape) -> Tensor<T>;
 }
 
-#[derive(Default)]
-pub struct BasicInit<T> {
+#[derive(Debug, Default, Clone, Copy)]
+pub struct ElemInit<T> {
+  t: T
+}
+
+impl<T> ElemInit<T> {
+  pub fn new(t: T) -> Self {
+    Self{t}
+  }
+}
+
+impl<T> Initializer<T> for ElemInit<T>
+  where T: Copy {
+  fn init(&self, s: Shape) -> Tensor<T> {
+    Tensor::shape_elem(s, self.t)
+  }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+pub struct HeInit<T> {
   _p: PhantomData<T>
 }
 
-impl<T> BasicInit<T> {
+impl<T> HeInit<T> {
   pub fn new() -> Self {
     Self{_p: PhantomData::default()}
   }
 }
 
-impl<T> Initializer<T> for BasicInit<T>
+impl<T> Initializer<T> for HeInit<T>
   where T: Float {
   fn init(&self, s: Shape) -> Tensor<T> {
     let d0 = 
@@ -34,7 +52,7 @@ impl<T> Initializer<T> for BasicInit<T>
   }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct XavierInit<T> {
   _p: PhantomData<T>
 }
