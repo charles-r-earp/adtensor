@@ -53,21 +53,17 @@ impl<T> Tensor<T> {
   #[inline]
   pub fn shape_fn<S, F>(s: S, mut f: F) -> Self
     where Shape: From<S>,
-          F: FnMut(&Shape)->T {
-    let s = Shape::from(s);
-    let n = s.product();
-    let mut v = Vec::with_capacity(n);
-    v.resize_with(n, || f(&s));
-    Tensor{s, v}
+          F: FnMut()->T {
+    let mut t = Self::shape(s);
+    t.v.resize_with(t.s.product(), || f());
+    t
   }
   #[inline]
   pub fn shape_elem<S>(s: S, x: T) -> Self
     where Shape: From<S>,
           T: Clone {
-    let s = Shape::from(s);
-    let n = s.product();
-    let mut t = Tensor{s, v: Vec::with_capacity(n)};
-    t.v.resize(n, x);
+    let mut t = Self::shape(s);
+    t.v.resize(t.s.product(), x);
     t
   }
   #[inline]
@@ -102,37 +98,14 @@ impl<T> Tensor<T> {
     });
     t
   }
-  /*#[inline]
-  pub fn init_fn<F>(self, f: F) -> Self
-    where F: FnMut()->T {
-    let mut t = Self{s: self.s, v: self.v};
-    let n = t.s.product();
-    t.v.reserve_exact(n);
-    unsafe { t.v.set_len(0) };
-    t.v.resize_with(n, f);
-    t
-  }*/
-  /*#[inline]
-  pub fn map<F>(&self, mut f: F) -> Self
-    where F: FnMut(T)->T,
-          T: Copy {
-    let mut x = unsafe { Tensor::shape_uninit(self.s.clone()) };
-    self.iter().zip(x.iter_mut())
-        .for_each(|(&t, x)| *x = f(t));
-    x
-  }*/
-  /*#[inline]
-  pub fn param_key(&self) -> usize {
-    self as *const Self as usize
-  }*/
 }
-
+/*
 impl<T> From<Vec<T>> for Tensor<T> {
   #[inline]
   fn from(v: Vec<T>) -> Self {
     Self{s: vec![1, v.len()].into(), v}
   }
-}
+}*/
 
 pub trait TensorMap<A, B> {
   type Output;
@@ -177,30 +150,54 @@ macro_rules! impl_tensor_op {
       type Output = Tensor<T>;
       #[inline]
       fn $func(self, rhs: &'b Tensor<T>) -> Self::Output {
-        (&self).add(rhs)
+        &self $op rhs
       }
     }
   }
 }
 
 impl_tensor_op!(+, Add, add);
-/*impl_tensor_op!(-, Sub, sub);
+impl_tensor_op!(-, Sub, sub);
 impl_tensor_op!(*, Mul, mul);
-impl_tensor_op!(/, Div, div);*/
-/*
-impl<'b, T> AddAssign<&'b Tensor<T>> for Tensor<T>
-  where T: Copy + Add<Output=T> {
-  fn add_assign(&mut self, rhs: &'b Tensor<T>) {
-    if self.len() == 0 {
-      let mut tmp = rhs.clone();
-      mem::swap(self, &mut tmp);
+impl_tensor_op!(/, Div, div);
+
+macro_rules! impl_tensor_inplace_op {
+  ($op:tt, $optrait:ident, $func:ident) => {
+    impl<'a, 'b, T> $optrait<&'b Tensor<T>> for Tensor<T>
+      where T: Copy + $optrait<T> {
+      #[inline]
+      fn $func(&mut self, rhs: &'b Tensor<T>) {
+        if self.len() == 0 {
+          mem::swap(self, &mut rhs.clone());
+        }
+        else {
+          debug_assert!(
+            self.s.can_broadcast(&rhs.s),
+            format!("Cannot perform inplace op with shapes {:?} and {:?}!", &self.s, &rhs.s)
+          );
+          self.v.chunks_exact_mut(rhs.len())
+              .for_each(|a| {
+            a.iter_mut().zip(rhs.iter())
+                        .for_each(|(a, &b)| *a $op b);
+          });
+        }
+      }
     }
-    else {
-      let mut tmp = self as &Self + rhs;
-      mem::swap(self, &mut tmp);  
-    }
+    /*impl<'b, T> $optrait<Tensor<T>> for Tensor<T>
+      where T: Copy + $optrait<Output=T> {
+      type Output = Tensor<T>;
+      #[inline]
+      fn $func(self, rhs: &'b Tensor<T>) -> Self::Output {
+        (&self).add(rhs)
+      }
+    }*/
   }
-}*/
+}
+
+impl_tensor_inplace_op!(+=, AddAssign, add_assign);
+//impl_tensor_op!(-, Sub, sub);
+//impl_tensor_op!(*, Mul, mul);
+//impl_tensor_op!(/, Div, div);
 
 pub trait Matmul<R> {
   type Output;

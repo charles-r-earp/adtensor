@@ -1,24 +1,26 @@
 use crate::Tensor;
-use crate::optim::Optimizer;
-use std::ops::{SubAssign, Mul};
+use crate::autograd::Optimizer;
+use std::ops::{Deref, DerefMut, SubAssign, Mul};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct SGD<T> {
   pub lr: T
 }
 
-impl<T> SGD<T> {
-  pub fn new(lr: T) -> Self {
-    Self{lr}
-  }
+#[derive(Debug, Default)]
+pub struct SGDParam<T> {
+  p: Tensor<T>
 }
 
-impl<'p, 'dy, T> Optimizer<'p, 'dy, T> for SGD<T>
+impl<T> Deref for SGDParam {
+  p: 
+
+impl<'p, 'dp, T> Optimizer<'p, T> for SGD<T>
   where T: SubAssign<T> + Mul<T, Output=T> + Copy {
-  fn step(&mut self, p: &'p mut Tensor<T>, dy: &'dy Tensor<T>) {
-    p.iter_mut().zip(dy.iter())
-                .for_each(|(p, &dy)| {
-      *p -= self.lr * dy;
+  fn step(&mut self, p: &'p mut Tensor<T>, dp: Tensor<T>) {
+    p.iter_mut().zip(dp.iter())
+                .for_each(|(p, &dp)| {
+      *p -= self.lr * dp;
     });
   }
 }

@@ -1,5 +1,7 @@
 use crate::Tensor;
+use crate::autograd::Parameter;
 
-pub trait Optimizer<'p, 'dy, T> {
-  fn step(&mut self, p: &'p mut Tensor<T>, dy: &'dy Tensor<T>);
+pub trait Optimizer<'p, T> {
+  type Meta;
+  fn step<I>(&self, p: &'p mut Parameter<T, Self::Meta>, dp: Tensor<T>) 
 }

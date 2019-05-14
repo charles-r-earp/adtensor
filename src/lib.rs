@@ -5,4 +5,4 @@ pub mod tensor;
 pub use tensor::{Tensor, TensorMap, Matmul};
 pub mod autograd;
 pub mod nn;
-pub mod optim;
+//pub mod optim;
