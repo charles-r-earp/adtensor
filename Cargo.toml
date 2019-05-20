@@ -3,28 +3,11 @@ name = "adtensor"
 version = "0.0.3"
 authors = ["Charles Earp <charles.r.earp@gmail.com>"]
 edition = "2018"
-description = "Graph based machine learning library."
+description = "Compositional machine learning library."
 license = "GPL-3.0"
 repository = "https://github.com/charles-r-earp/adtensor"
 keywords = ["Auto", "Learning", "Tensor", "Grad", "Net"]
 
 [dependencies]
-rand = "0.6.5"
-matrixmultiply = "0.2.2"
-num-traits = "0.2.6"
-itertools = "0.8.0"
-prettytable-rs = "0.8.0"
-
-[profile.dev]
-opt-level = 0
-
-[profile.bench]
-opt-level = 3
-
-[dev-dependencies]
-criterion = "0.2"
-ndarray = "0.12.1"
-
-[[bench]]
-name = "bench_adtensor"
-harness = false
+rspirv = "0.5.4"
+spirv_headers = "1.3"
