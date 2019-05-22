@@ -9,5 +9,5 @@ repository = "https://github.com/charles-r-earp/adtensor"
 keywords = ["Auto", "Learning", "Tensor", "Grad", "Net"]
 
 [dependencies]
-rspirv = "0.5.4"
-spirv_headers = "1.3"
+ocl = "0.19"
+timeit = "0.1.2"
